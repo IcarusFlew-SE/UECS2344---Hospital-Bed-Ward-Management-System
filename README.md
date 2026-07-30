@@ -38,6 +38,7 @@ Possible reports include:
 
 **6. Healthcare Operation Management**
 The system supports operational workflow in allocation of beds and monitoring ward capacity
+*This functionality demonstrates inheritance and polymorphism*
 
 **7. Role-Based Access Control (RBAC)**
 Different users have different permissions:
@@ -47,7 +48,6 @@ Different users have different permissions:
 | Doctor | Manage consultations and patient history |
 | Nurse | Update patient status |
 | Admin | Full system access |
-*This functionality demonstrates inheritance and polymorphism*
 
 **8. Alert & Notification System**
 The system automatically notify users when important event occur:
