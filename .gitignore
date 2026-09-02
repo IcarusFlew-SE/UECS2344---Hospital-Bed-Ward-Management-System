@@ -17,6 +17,23 @@ buildNumber.properties
 .settings/
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+# Eclipse
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+.settings/
+
+# SonarLint
+.sonarlint/
+
+# Java
+*.class
+
+# Build output
+target/
 
 #OS
 .DS_Store
