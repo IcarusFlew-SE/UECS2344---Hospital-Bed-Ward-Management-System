@@ -34,7 +34,7 @@ public class Main extends Application {
         tabs.getTabs().add(new Tab("Ward Status", new WardStatusUI(hc, wards)));
         tabs.getTabs().add(new Tab("Reports", new ReportUI(hc)));
         tabs.getTabs().add(new Tab("Assign Nurse", new NurseAssignmentUI(hc, nurses, wards)));
-        tabs.getTabs().add(new Tab("Notifications", new NotificationUI(hc, "U3")));
+        tabs.getTabs().add(new Tab("Notifications", new NotificationUI(ds, "U3")));
         tabs.getTabs().forEach(t -> t.setClosable(false));
 
         stage.setScene(new Scene(tabs, 800, 600));
