@@ -60,6 +60,7 @@ public class Main extends Application {
         dataStore.saveUser(new Admin("U3", "Chloe Wong", "0127777777", "chloe@mail.com", "Full"));
 	}
 	
+
 	public static void main(String[] args) {
         launch(args);
     }
