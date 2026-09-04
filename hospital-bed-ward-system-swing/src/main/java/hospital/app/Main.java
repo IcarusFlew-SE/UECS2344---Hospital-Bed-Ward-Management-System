@@ -1,6 +1,7 @@
 package hospital.app;
 
 import javax.swing.*;
+import java.awt.Component;
 
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
@@ -30,12 +31,26 @@ public class Main {
 		}
 		List<Ward> wards = ds.findAllWards();
 
+		TransferUI transferUI = new TransferUI(hc, ds, wards);
+		WardStatusUI wardStatusUI = new WardStatusUI(hc, wards);
+		NotificationUI notificationUI = new NotificationUI(ds, "U3");
+
 		JTabbedPane tabs = new JTabbedPane();
 		tabs.addTab("Admit Patient", new AdmissionUI(hc, patients, wards));
-		tabs.addTab("Ward Status", new WardStatusUI(hc, wards));
+		tabs.addTab("Transfer Patient", transferUI);
+		tabs.addTab("Ward Status", wardStatusUI);
 		tabs.addTab("Reports", new ReportUI(hc));
 		tabs.addTab("Assign Nurse", new NurseAssignmentUI(hc, nurses, wards));
-		tabs.addTab("Notifications", new NotificationUI(ds, "U3"));
+		tabs.addTab("Notifications", notificationUI);
+
+		// Admissions, bed statuses and notifications all change on other tabs, so each of these
+		// screens reloads whatever it shows the moment the user switches to it.
+		tabs.addChangeListener(e -> {
+			Component selected = tabs.getSelectedComponent();
+			if (selected == transferUI) transferUI.loadActiveAdmissions();
+			if (selected == wardStatusUI) wardStatusUI.refreshBeds();
+			if (selected == notificationUI) notificationUI.viewNotifications();
+		});
 
 		JFrame frame = new JFrame("Hospital Bed & Ward Management System");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

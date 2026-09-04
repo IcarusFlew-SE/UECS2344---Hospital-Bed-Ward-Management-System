@@ -53,11 +53,17 @@ public class AdmissionUI extends JPanel {
 			resultLabel.setText("Select a patient and a ward first.");
 			return;
 		}
-		Admission result = controller.admitPatient(patient, ward);
-		if (result != null) {
-			resultLabel.setText("Admitted. Bed assigned: " + result.getBed().getBedId());
-		} else {
-			resultLabel.setText("No bed available in " + ward.getWardName() + ".");
+		try {
+			Admission result = controller.admitPatient(patient, ward);
+			if (result != null) {
+				resultLabel.setText("Admitted. Bed assigned: " + result.getBed().getBedId());
+			} else {
+				// UC01 alt flow 4a - no beds available in the selected ward
+				resultLabel.setText("No bed available in " + ward.getWardName() + ". Select another ward.");
+			}
+		} catch (IllegalStateException ex) {
+			// UC01 alt flow 3a - the patient already has an active admission
+			resultLabel.setText(ex.getMessage());
 		}
 	}
 

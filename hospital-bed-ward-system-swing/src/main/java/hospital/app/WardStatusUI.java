@@ -27,13 +27,7 @@ public class WardStatusUI extends JPanel {
 		bedBox.setRenderer(bedRenderer());
 		for (BedStatus s : BedStatus.values()) statusBox.addItem(s);
 
-		wardBox.addActionListener(e -> {
-			bedBox.removeAllItems();
-			Ward selected = (Ward) wardBox.getSelectedItem();
-			if (selected != null) {
-				for (Bed bed : selected.getBeds()) bedBox.addItem(bed);
-			}
-		});
+		wardBox.addActionListener(e -> refreshBeds());
 		if (wardBox.getItemCount() > 0) {
 			wardBox.setSelectedIndex(0);
 		}
@@ -63,6 +57,16 @@ public class WardStatusUI extends JPanel {
 		add(resultLabel);
 	}
 
+	// UC10 - reload the beds of the selected ward so their current status is always shown
+	public void refreshBeds() {
+		Ward selected = (Ward) wardBox.getSelectedItem();
+		Bed previous = (Bed) bedBox.getSelectedItem();
+		bedBox.removeAllItems();
+		if (selected == null) return;
+		for (Bed bed : selected.getBeds()) bedBox.addItem(bed);
+		if (previous != null) bedBox.setSelectedItem(previous);
+	}
+
 	// Nurse use WardStatusUI: select bed for bed status
 	public void selectBed(Bed bed, BedStatus newStatus) {
 		if (bed == null || newStatus == null) {
@@ -72,8 +76,10 @@ public class WardStatusUI extends JPanel {
 		try {
 			controller.updateBedStatus(bed, newStatus);
 			resultLabel.setText(bed.getBedId() + " is now " + newStatus);
+			refreshBeds();
 		} catch (IllegalStateException ex) {
-			resultLabel.setText("Invalid transition: " + ex.getMessage());
+			// UC05 alt flow 3a - invalid status transition, the system informs the Nurse
+			resultLabel.setText("Rejected: " + ex.getMessage());
 		}
 	}
 
@@ -105,7 +111,7 @@ public class WardStatusUI extends JPanel {
 			public Component getListCellRendererComponent(JList<?> list, Object value, int index,
 					boolean isSelected, boolean cellHasFocus) {
 				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (value instanceof Bed b) setText(b.getBedId());
+				if (value instanceof Bed b) setText(b.getBedId() + "  -  " + b.getStatus());
 				return this;
 			}
 		};
