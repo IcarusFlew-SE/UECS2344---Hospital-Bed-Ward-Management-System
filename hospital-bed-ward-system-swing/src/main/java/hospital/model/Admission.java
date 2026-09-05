@@ -32,9 +32,16 @@ public class Admission {
 		this.bed.updateBedStatus(BedStatus.CLEANING);
 	}
 	
+	// Assumption 8 - an Admission may be cancelled at any point before it is discharged,
+	// so a transferred patient can still be cancelled.
+	public boolean isActive() {
+		return status == AdmissionStatus.ADMITTED || status == AdmissionStatus.TRANSFERRED;
+	}
+
 	public void cancel() {
-		if (this.status != AdmissionStatus.ADMITTED) {
-			throw new IllegalStateException("Only an active admission can be cancelled.");
+		if (!isActive()) {
+			throw new IllegalStateException(
+					"Only an active admission can be cancelled (this one is " + status + ").");
 		}
 		this.status = AdmissionStatus.CANCELLED;
 		this.bed.updateBedStatus(BedStatus.AVAILABLE);

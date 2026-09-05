@@ -32,6 +32,31 @@ public class HospitalDataStore {
     public List<Ward> findAllWards() { return wards; }
     public List<Admission> findAllAdmissions() { return admissions; }
     public List<User> findAllUsers() { return users; }
+
+    // UC01 alt flow 3a - a Patient may hold at most one active Admission (assumption 2)
+    public Admission findActiveAdmissionByPatient(Patient patient) {
+        for (Admission a : admissions) {
+            if (a.getPatient() == patient && a.isActive()) return a;
+        }
+        return null;
+    }
+
+    // UC05 - a Bed still held by an active Admission must not be freed
+    public Admission findActiveAdmissionByBed(Bed bed) {
+        for (Admission a : admissions) {
+            if (a.getBed() == bed && a.isActive()) return a;
+        }
+        return null;
+    }
+
+    // UC02 - the Doctor picks from the currently active admissions
+    public List<Admission> findActiveAdmissions() {
+        List<Admission> result = new ArrayList<>();
+        for (Admission a : admissions) {
+            if (a.isActive()) result.add(a);
+        }
+        return result;
+    }
 	public User findUserById(String userId) {
         for (User u : users) {
             if (u.getUserId().equals(userId)) return u;

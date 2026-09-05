@@ -50,7 +50,13 @@ public class ReportUI extends JPanel {
 		}
 		Report report = controller.generateReport(type, period);
 		int count = report.getData() != null ? report.getData().size() : 0;
-		resultLabel.setText("Report " + report.getReportId() + " generated (" + count + " records).");
+		if (count == 0) {
+			// UC03 alt flow 1a - no records found for the specified period
+			resultLabel.setText("No records found for " + period + ". Adjust the period and try again.");
+			return;
+		}
+		resultLabel.setText("Report " + report.getReportId() + " (" + type + ", " + period
+				+ ") generated with " + count + " records.");
 	}
 
 	private static JLabel label(String text) {
