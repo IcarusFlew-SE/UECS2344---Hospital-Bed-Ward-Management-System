@@ -1,4 +1,4 @@
-=package hospital.app;
+package hospital.app;
 
 import hospital.controller.HospitalController;
 import hospital.model.Nurse;

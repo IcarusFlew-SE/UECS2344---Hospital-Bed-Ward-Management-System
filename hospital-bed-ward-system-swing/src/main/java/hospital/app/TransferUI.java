@@ -1,26 +1,27 @@
 package hospital.app;
 
-import java.util.*;
-
-import java.awt.Component;
-import java.awt.Dimension;
-import javax.swing.*;
-
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
 import hospital.model.Admission;
 import hospital.model.Patient;
+import hospital.model.User;
 import hospital.model.Ward;
 
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+
 // UC02 - Transfer Patient. The Doctor picks an active admission and a destination ward.
-// Also covers UC01 flow 6a (Cancel) and UC07 (Patient views own admission), since all
-// three are Admission-centric and stay together per the Design CD Addendum.
 public class TransferUI extends JPanel {
 	private final HospitalController controller;
 	private final HospitalDataStore dataStore;
 	private final JComboBox<Admission> admissionBox = new JComboBox<>();
 	private final JComboBox<Ward> wardBox = new JComboBox<>();
 	private final JLabel resultLabel = new JLabel(" ");
+	private final JButton refreshBtn = new JButton("Refresh Admissions");
+	private final JButton submitBtn = new JButton("Transfer Patient");
+	private final JButton cancelBtn = new JButton("Cancel Admission");
+	private final JButton dischargeBtn = new JButton("Discharge Patient");
 
 	private final JComboBox<Patient> myAdmissionPatientBox = new JComboBox<>();
 	private final DefaultListModel<String> myAdmissionModel = new DefaultListModel<>();
@@ -38,17 +39,17 @@ public class TransferUI extends JPanel {
 		sizeCombo(admissionBox);
 		sizeCombo(wardBox);
 
-		JButton refreshBtn = new JButton("Refresh Admissions");
 		refreshBtn.addActionListener(e -> loadActiveAdmissions());
 
-		JButton submitBtn = new JButton("Transfer Patient");
 		submitBtn.addActionListener(e -> submitTransfer(
 				(Admission) admissionBox.getSelectedItem(),
 				(Ward) wardBox.getSelectedItem()));
 
 		// UC01 flow 6a - cancel an active admission before it is discharged
-		JButton cancelBtn = new JButton("Cancel Admission");
 		cancelBtn.addActionListener(e -> cancelAdmission((Admission) admissionBox.getSelectedItem()));
+
+		// UC01 - discharge: the normal, successful conclusion of an admission
+		dischargeBtn.addActionListener(e -> dischargePatient((Admission) admissionBox.getSelectedItem()));
 
 		for (Patient p : patients) myAdmissionPatientBox.addItem(p);
 		myAdmissionPatientBox.setRenderer(patientRenderer());
@@ -56,7 +57,7 @@ public class TransferUI extends JPanel {
 		myAdmissionPatientBox.addActionListener(e -> viewMyAdmission((Patient) myAdmissionPatientBox.getSelectedItem()));
 		myAdmissionView.setVisibleRowCount(6);
 
-		add(label("Transfer Patient"));
+		add(label("Transfer / Discharge / Cancel"));
 		add(Box.createVerticalStrut(10));
 		add(label("Active Admission:"));
 		add(admissionBox);
@@ -66,9 +67,12 @@ public class TransferUI extends JPanel {
 		add(label("Destination Ward:"));
 		add(wardBox);
 		add(Box.createVerticalStrut(10));
-		add(submitBtn);
-		add(Box.createHorizontalStrut(8));
-		add(cancelBtn);
+		JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+		actionRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+		actionRow.add(submitBtn);
+		actionRow.add(dischargeBtn);
+		actionRow.add(cancelBtn);
+		add(actionRow);
 		add(Box.createVerticalStrut(8));
 		add(resultLabel);
 
@@ -85,8 +89,38 @@ public class TransferUI extends JPanel {
 		loadActiveAdmissions();
 	}
 
+	private void dischargePatient(Admission selectedItem) {
+		if (selectedItem == null) {
+			resultLabel.setText("Select an admission to discharge.");
+			return;
+		}
+		try {
+			controller.dischargePatient(selectedItem);
+			resultLabel.setText("Patient " + selectedItem.getPatient().getName() + " discharged, bed released.");
+			loadActiveAdmissions();
+		} catch (IllegalStateException ex) {
+			resultLabel.setText("Cannot discharge: " + ex.getMessage());
+		}
+	}
+
+	// RBAC - enable only the sections the currently acting user's role is permitted to use,
+	// per the use case document's actor lists (UC01/UC02 = Doctor, UC07 = Patient)
+	public void applyPermissions(User currentUser) {
+		boolean canManageAdmissions = currentUser != null
+				&& (currentUser.getPermissions().contains("TRANSFER_PATIENT")
+					|| currentUser.getPermissions().contains("ADMIT_PATIENT"));
+		submitBtn.setEnabled(canManageAdmissions);
+		dischargeBtn.setEnabled(canManageAdmissions);
+		cancelBtn.setEnabled(canManageAdmissions);
+		wardBox.setEnabled(canManageAdmissions);
+
+		boolean canViewOwn = currentUser != null
+				&& currentUser.getPermissions().contains("VIEW_OWN_ADMISSION");
+		myAdmissionPatientBox.setEnabled(canViewOwn);
+	}
+
 	// Doctor selects the Patient's active Admission
-	public final void loadActiveAdmissions() {
+	public void loadActiveAdmissions() {
 		admissionBox.removeAllItems();
 		for (Admission a : dataStore.findActiveAdmissions()) {
 			admissionBox.addItem(a);
@@ -101,30 +135,22 @@ public class TransferUI extends JPanel {
 	// Doctor confirms the transfer; the controller records it and updates both beds
 	public void submitTransfer(Admission admission, Ward destination) {
 		if (admission == null || destination == null) {
-			String msg = "Select an active admission and a destination ward.";
-			resultLabel.setText(msg);
-			JOptionPane.showMessageDialog(this, msg, "Input Warning", JOptionPane.WARNING_MESSAGE);
+			resultLabel.setText("Select an active admission and a destination ward.");
 			return;
 		}
 		if (admission.getWard() == destination) {
-			String msg = "Patient is already in " + destination.getWardName() + ".";
-			resultLabel.setText(msg);
-			JOptionPane.showMessageDialog(this, msg, "Same Ward Selected", JOptionPane.WARNING_MESSAGE);
+			resultLabel.setText("Patient is already in " + destination.getWardName() + ".");
 			return;
 		}
 
 		boolean ok = controller.transferPatient(admission, destination);
 		if (ok) {
-			String msg = admission.getPatient().getName() + " transferred to "
-					+ destination.getWardName() + ", bed " + admission.getBed().getBedId() + ".";
-			resultLabel.setText(msg);
-			JOptionPane.showMessageDialog(this, msg, "Transfer Successful", JOptionPane.INFORMATION_MESSAGE);
+			resultLabel.setText(admission.getPatient().getName() + " transferred to "
+					+ destination.getWardName() + ", bed " + admission.getBed().getBedId() + ".");
 			loadActiveAdmissions();
 		} else {
 			// UC02 alt flow 3a - destination ward is at full capacity
-			String msg = destination.getWardName() + " is at full capacity. Select another ward.";
-			resultLabel.setText(msg);
-			JOptionPane.showMessageDialog(this, msg, "Ward Capacity Full", JOptionPane.ERROR_MESSAGE);
+			resultLabel.setText(destination.getWardName() + " is at full capacity. Select another ward.");
 		}
 	}
 
