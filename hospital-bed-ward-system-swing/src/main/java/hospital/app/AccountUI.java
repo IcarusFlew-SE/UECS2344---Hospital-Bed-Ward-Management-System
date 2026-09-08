@@ -1,5 +1,7 @@
 package hospital.app;
 
+import java.util.*;
+
 import hospital.controller.HospitalController;
 import hospital.model.Admin;
 import hospital.model.Doctor;
@@ -9,7 +11,6 @@ import hospital.model.User;
 import javax.swing.*;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.util.List;
 
 // UC09 - Manage User Account & Profile. Kept as its own class since account
 // administration is a distinct concern from hospital operations, per the

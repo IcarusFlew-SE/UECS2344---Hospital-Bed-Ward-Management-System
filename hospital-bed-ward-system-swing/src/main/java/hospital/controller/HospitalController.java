@@ -1,16 +1,7 @@
 package hospital.controller;
 
 import hospital.data.HospitalDataStore;
-import hospital.model.Admission;
-import hospital.model.Bed;
-import hospital.model.BedStatus;
-import hospital.model.Doctor;
-import hospital.model.Notification;
-import hospital.model.Nurse;
-import hospital.model.Patient;
-import hospital.model.Report;
-import hospital.model.Transfer;
-import hospital.model.Ward;
+import hospital.model.*;
 
 public class HospitalController {
 	private HospitalDataStore dataStore;
