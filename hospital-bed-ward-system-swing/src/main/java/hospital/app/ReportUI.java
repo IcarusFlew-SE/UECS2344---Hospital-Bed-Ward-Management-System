@@ -48,15 +48,32 @@ public class ReportUI extends JPanel {
 			resultLabel.setText("Select a report type and enter a period.");
 			return;
 		}
+
 		Report report = controller.generateReport(type, period);
 		int count = report.getData() != null ? report.getData().size() : 0;
+
 		if (count == 0) {
 			// UC03 alt flow 1a - no records found for the specified period
 			resultLabel.setText("No records found for " + period + ". Adjust the period and try again.");
 			return;
 		}
-		resultLabel.setText("Report " + report.getReportId() + " (" + type + ", " + period
-				+ ") generated with " + count + " records.");
+
+		// UC03 flow 3 - present the generated Report to the Admin
+		StringBuilder reportText = new StringBuilder();
+
+		reportText.append("<html>");
+		reportText.append("<b>Report ID:</b> ").append(report.getReportId()).append("<br>");
+		reportText.append("<b>Report Type:</b> ").append(type).append("<br>");
+		reportText.append("<b>Period:</b> ").append(period).append("<br>");
+		reportText.append("<br>");
+
+		for (Object item : report.getData()) {
+			reportText.append(item).append("<br>");
+		}
+
+		reportText.append("</html>");
+
+		resultLabel.setText(reportText.toString());
 	}
 
 	private static JLabel label(String text) {

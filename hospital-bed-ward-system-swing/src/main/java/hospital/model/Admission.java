@@ -27,6 +27,10 @@ public class Admission {
 	public Ward getWard() {return ward;}
 	public AdmissionStatus getStatus() {return status;}
 	
+	// UC03 - used to calculate admission stay length for reports
+	public LocalDate getAdmissionDate() {return admissionDate;}
+	public LocalDate getDischargeDate() {return dischargeDate;}
+	
 	public Doctor getDoctor() {return doctor;}
 	public void setDoctor(Doctor doctor) {this.doctor = doctor;}
 	
@@ -54,9 +58,9 @@ public class Admission {
 		this.bed.updateBedStatus(BedStatus.AVAILABLE);
 	}
 	
-	 public void recordTransfer(Transfer t) {
-	        this.status = AdmissionStatus.TRANSFERRED;
-	        this.ward = t.getToWard();
-	        this.bed = t.getToBed();
-	    }
+	public void recordTransfer(Transfer t) {
+	    this.status = AdmissionStatus.TRANSFERRED;
+	    this.ward = t.getToWard();
+	    this.bed = t.getToBed();
+	}
 }
