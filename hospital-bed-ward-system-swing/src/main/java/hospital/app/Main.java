@@ -1,7 +1,9 @@
 package hospital.app;
 
 import javax.swing.*;
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.FlowLayout;
 
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
@@ -23,39 +25,68 @@ public class Main {
 
 		seedSampleData(ds);
 
+		List<User> allUsers = ds.findAllUsers();
 		List<Patient> patients = new ArrayList<>();
 		List<Nurse> nurses = new ArrayList<>();
-		for (User u : ds.findAllUsers()) {
+		for (User u : allUsers) {
 			if (u instanceof Patient p) patients.add(p);
 			if (u instanceof Nurse n) nurses.add(n);
 		}
 		List<Ward> wards = ds.findAllWards();
 
-		TransferUI transferUI = new TransferUI(hc, ds, wards);
-		WardStatusUI wardStatusUI = new WardStatusUI(hc, wards);
-		NotificationUI notificationUI = new NotificationUI(ds, "U3");
+		TransferUI transferUI = new TransferUI(hc, ds, wards, patients);
+		WardStatusUI wardStatusUI = new WardStatusUI(hc, wards, nurses);
+		NotificationUI notificationUI = new NotificationUI(ds, null);
+		AccountUI accountUI = new AccountUI(hc, allUsers);
+
+		// Simulated login - implements the "Actor is authenticated" precondition
+		// stated in every use case description, without building real auth.
+		JComboBox<User> loginBox = new JComboBox<>();
+		for (User u : allUsers) loginBox.addItem(u);
+		loginBox.setRenderer(new DefaultListCellRenderer() {
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+					boolean isSelected, boolean cellHasFocus) {
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (value instanceof User u) setText(u.getName() + " (" + u.getClass().getSimpleName() + ")");
+				return this;
+			}
+		});
+		loginBox.addActionListener(e -> {
+			User selected = (User) loginBox.getSelectedItem();
+			if (selected != null) notificationUI.setCurrentUserId(selected.getUserId());
+		});
+
+		JPanel loginBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+		loginBar.add(new JLabel("Acting as:"));
+		loginBar.add(loginBox);
 
 		JTabbedPane tabs = new JTabbedPane();
 		tabs.addTab("Admit Patient", new AdmissionUI(hc, patients, wards));
-		tabs.addTab("Transfer Patient", transferUI);
+		tabs.addTab("Transfer / Cancel", transferUI);
 		tabs.addTab("Ward Status", wardStatusUI);
 		tabs.addTab("Reports", new ReportUI(hc));
 		tabs.addTab("Assign Nurse", new NurseAssignmentUI(hc, nurses, wards));
 		tabs.addTab("Notifications", notificationUI);
+		tabs.addTab("Accounts", accountUI);
 
 		// Admissions, bed statuses and notifications all change on other tabs, so each of these
 		// screens reloads whatever it shows the moment the user switches to it.
 		tabs.addChangeListener(e -> {
 			Component selected = tabs.getSelectedComponent();
 			if (selected == transferUI) transferUI.loadActiveAdmissions();
-			if (selected == wardStatusUI) wardStatusUI.refreshBeds();
+			if (selected == wardStatusUI) wardStatusUI.viewAllWardStatus();
 			if (selected == notificationUI) notificationUI.viewNotifications();
 		});
 
+		JPanel root = new JPanel(new BorderLayout());
+		root.add(loginBar, BorderLayout.NORTH);
+		root.add(tabs, BorderLayout.CENTER);
+
 		JFrame frame = new JFrame("Hospital Bed & Ward Management System");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setContentPane(tabs);
-		frame.setSize(800, 600);
+		frame.setContentPane(root);
+		frame.setSize(850, 680);
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
 	}

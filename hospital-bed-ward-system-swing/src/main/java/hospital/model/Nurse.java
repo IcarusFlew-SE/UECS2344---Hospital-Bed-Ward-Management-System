@@ -16,7 +16,7 @@ public class Nurse extends User{
 	
 	@Override
 	public List<String> getPermissions() {
-		return List.of("UPDATE_BED_STATUS", "VIEW_WARD_ASSIGNMENT");
+		return List.of("UPDATE_BED_STATUS", "VIEW_WARD_ASSIGNMENT", "VIEW_WARD_STATUS", "MANAGE_OWN_PROFILE");
 	}
 	
 	public void updateAssignment(Ward ward, String shift) {

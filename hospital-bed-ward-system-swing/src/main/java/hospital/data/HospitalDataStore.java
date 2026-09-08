@@ -57,6 +57,15 @@ public class HospitalDataStore {
         }
         return result;
     }
+
+    // UC07 - Patient views their own admission history, active or past
+    public List<Admission> findAdmissionsByPatient(String patientId) {
+        List<Admission> result = new ArrayList<>();
+        for (Admission a : admissions) {
+            if (a.getPatient().getUserId().equals(patientId)) result.add(a);
+        }
+        return result;
+    }
 	public User findUserById(String userId) {
         for (User u : users) {
             if (u.getUserId().equals(userId)) return u;
