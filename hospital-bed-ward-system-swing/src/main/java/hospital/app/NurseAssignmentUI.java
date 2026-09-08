@@ -1,4 +1,4 @@
-package hospital.app;
+=package hospital.app;
 
 import hospital.controller.HospitalController;
 import hospital.model.Nurse;
@@ -58,17 +58,21 @@ public class NurseAssignmentUI extends JPanel {
 			resultLabel.setText("Select a nurse, a ward, and enter a shift.");
 			return;
 		}
+
 		boolean ok = controller.assignNurseToWard(nurse, ward, shift);
+
 		if (ok) {
 			resultLabel.setText(nurse.getName() + " assigned to " + ward.getWardName() + " (" + shift + ").");
 			return;
 		}
 
-		// UC04 alt flow 3a - warn the Admin, who then relocates the nurse or changes the selection
+		// UC04 alt flow 3a - warn the Admin about a conflicting shift
 		int choice = JOptionPane.showConfirmDialog(this,
-				nurse.getName() + " is already assigned to " + nurse.getAssignedWard().getWardName()
+				nurse.getName() + " already has a " + nurse.getShift() + " shift at "
+						+ nurse.getAssignedWard().getWardName()
 						+ ".\nRelocate to " + ward.getWardName() + " (" + shift + ")?",
 				"Schedule Conflict", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
 		if (choice == JOptionPane.YES_OPTION) {
 			controller.assignNurseToWard(nurse, ward, shift, true);
 			resultLabel.setText(nurse.getName() + " relocated to " + ward.getWardName() + " (" + shift + ").");

@@ -77,6 +77,7 @@ public class HospitalController {
         }
         return true;
     }
+
     // Id based overload to match lifeline in SD UC02
     public boolean transferPatient(String patientId, Ward newWard) {
         Patient patient = dataStore.findPatientById(patientId);
@@ -108,12 +109,73 @@ public class HospitalController {
     public Report generateReport(String type, String period) {
         return generateReport(type, period, false);
     }
+
     public Report generateReport(String type, String period, boolean includeUserData) {
         Report report = new Report(generateId("R"), type, period);
+        
         if ("Occupancy".equals(type)) {
-            report.setData(dataStore.findAllWards());
+            // UC03 S1 - retrieve all Wards and their Beds
+            java.util.List<String> occupancyData = new java.util.ArrayList<>();
+            
+            for (Ward ward : dataStore.findAllWards()) {
+                int totalBeds = ward.getBeds().size();
+                int occupiedBeds = 0;
+                
+                for (Bed bed : ward.getBeds()) {
+                    if (bed.getStatus() == BedStatus.OCCUPIED) {
+                        occupiedBeds++;
+                    }
+                }
+                
+                // UC03 S1 - calculate occupancy rate per Ward
+                double occupancyRate = totalBeds == 0
+                        ? 0.0
+                        : (occupiedBeds * 100.0) / totalBeds;
+                
+                occupancyData.add(
+                        ward.getWardName() + ": "
+                        + occupiedBeds + "/" + totalBeds
+                        + " beds occupied ("
+                        + String.format("%.1f", occupancyRate)
+                        + "%)"
+                );
+            }
+            
+            report.setData(occupancyData);
+            
         } else if ("Admissions".equals(type)) {
-            report.setData(dataStore.findAllAdmissions());
+            // UC03 S2 - retrieve all Admission records
+            java.util.List<Admission> admissions = dataStore.findAllAdmissions();
+            
+            int admissionCount = admissions.size();
+            long totalStayDays = 0;
+            int completedAdmissions = 0;
+            
+            // UC03 S2 - calculate average stay length
+            for (Admission admission : admissions) {
+                if (admission.getDischargeDate() != null) {
+                    long stayDays = java.time.temporal.ChronoUnit.DAYS.between(
+                            admission.getAdmissionDate(),
+                            admission.getDischargeDate()
+                    );
+                    totalStayDays += stayDays;
+                    completedAdmissions++;
+                }
+            }
+            
+            double averageStay = completedAdmissions == 0
+                    ? 0.0
+                    : (double) totalStayDays / completedAdmissions;
+            
+            java.util.List<String> admissionData = new java.util.ArrayList<>();
+            admissionData.add("Total admissions: " + admissionCount);
+            admissionData.add(
+                    "Average stay length: "
+                    + String.format("%.1f", averageStay)
+                    + " days"
+            );
+            
+            report.setData(admissionData);
         }
 
         if (includeUserData) {
@@ -130,12 +192,18 @@ public class HospitalController {
     // UC04 alt flow 3a - the System warns the Admin of the conflict; the Admin then either
     // changes the selection or relocates the Nurse (relocate = true).
     public boolean assignNurseToWard(Nurse nurse, Ward ward, String shift, boolean relocate) {
-        boolean conflict = nurse.getAssignedWard() != null && nurse.getAssignedWard() != ward;
+        boolean conflict = nurse.getAssignedWard() != null
+                && nurse.getAssignedWard() != ward
+                && nurse.getShift() != null
+                && nurse.getShift().equalsIgnoreCase(shift);
+
         if (conflict && !relocate) {
             return false; // UI shows the conflict warning and asks the Admin to confirm
         }
+
         Ward previous = nurse.getAssignedWard();
         nurse.updateAssignment(ward, shift);
+
         // UC04 flow 4 - notify the nurse being (re)assigned specifically, not everyone
         if (conflict) {
             notify("Nurse " + nurse.getName() + " relocated from " + previous.getWardName()
