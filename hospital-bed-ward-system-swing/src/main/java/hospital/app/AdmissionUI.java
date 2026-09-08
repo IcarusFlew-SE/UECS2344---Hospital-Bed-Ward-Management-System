@@ -1,14 +1,25 @@
 package hospital.app;
 
-import hospital.controller.HospitalController;
-import hospital.model.Admission;
-import hospital.model.Patient;
-import hospital.model.Ward;
-
-import javax.swing.*;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+import hospital.controller.HospitalController;
+import hospital.model.Admission;
+import hospital.model.Doctor;
+import hospital.model.Patient;
+import hospital.model.Ward;
 
 // One purpose: admit patient
 public class AdmissionUI extends JPanel {
@@ -64,6 +75,30 @@ public class AdmissionUI extends JPanel {
 		} catch (IllegalStateException ex) {
 			// UC01 alt flow 3a - the patient already has an active admission
 			resultLabel.setText(ex.getMessage());
+		}
+	}
+
+	// Overload for submitAdmission
+	public void submitAdmission(Patient patient, Doctor doctor, Ward ward) {
+		if (patient == null || ward == null) {
+			resultLabel.setText("Select a patient and a ward first.");
+			JOptionPane.showMessageDialog(this, "Select a patient and a ward first.", "Input Warning", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		try {
+			Admission result = controller.admitPatient(patient, doctor, ward);
+			if (result != null) {
+				String msg = "Admitted. Bed assigned: " + result.getBed().getBedId();
+				resultLabel.setText(msg);
+                JOptionPane.showMessageDialog(this, msg, "Admission Confirmed", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+				String msg = "No bed available in " + ward.getWardName() + ". Select another ward.";
+                resultLabel.setText(msg);
+                JOptionPane.showMessageDialog(this, msg, "No Beds Available", JOptionPane.ERROR_MESSAGE);
+			}
+		} catch (IllegalStateException ex) {
+			resultLabel.setText(ex.getMessage());
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Admission Conflict", JOptionPane.WARNING_MESSAGE);
 		}
 	}
 

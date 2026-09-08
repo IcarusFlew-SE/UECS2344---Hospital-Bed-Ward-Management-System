@@ -1,7 +1,16 @@
 package hospital.controller;
 
 import hospital.data.HospitalDataStore;
-import hospital.model.*;
+import hospital.model.Admission;
+import hospital.model.Bed;
+import hospital.model.BedStatus;
+import hospital.model.Doctor;
+import hospital.model.Notification;
+import hospital.model.Nurse;
+import hospital.model.Patient;
+import hospital.model.Report;
+import hospital.model.Transfer;
+import hospital.model.Ward;
 
 public class HospitalController {
 	private HospitalDataStore dataStore;
@@ -12,6 +21,10 @@ public class HospitalController {
 	
 	// UC01 - Manage Patient Admission
     public Admission admitPatient(Patient patient, Ward ward) {
+        return admitPatient(patient, null, ward);
+    }
+
+    public Admission admitPatient(Patient patient, Doctor doctor, Ward ward) {
         // UC01 alt flow 3a - Patient already has an active admission (assumption 2)
         Admission existing = dataStore.findActiveAdmissionByPatient(patient);
         if (existing != null) {
@@ -19,15 +32,20 @@ public class HospitalController {
                     + " already has an active admission in " + existing.getWard().getWardName() + ".");
         }
 
+        // getAvalableBeds() check on Ward
         Bed bed = dataStore.findAvailableBed(ward);
         if (bed == null) {
             notify("No bed available in ward " + ward.getWardName());
             return null;
         }
+
+        // updateStatus("Occupied") on Bed
         bed.updateBedStatus(BedStatus.OCCUPIED);
         Admission admission = new Admission(generateId("A"), patient, bed, ward);
+
         dataStore.saveAdmission(admission);
 
+        // Notify if ward reached capacity
         if (ward.isAtCapacity()) {
             // UC01 flow 7 - capacity alerts are targeted at Admin specifically, not broadcast
             notifyAllWithPermission("Ward " + ward.getWardName() + " has reached capacity.", "MANAGE_WARDS");
@@ -68,6 +86,20 @@ public class HospitalController {
         }
         return true;
     }
+    // Id based overload to match lifeline in SD UC02
+    public boolean transferPatient(String patientId, Ward newWard) {
+        Patient patient = dataStore.findPatientById(patientId);
+        if (patient == null) {
+            notify("Patient ID not found: " + patientId);
+            return false;
+        }
+        Admission activeAdmission = dataStore.findActiveAdmissionByPatient(patient);
+        if (activeAdmission == null) {
+            notify("No active admission found for patient: " + patient.getName());
+            return false;
+        }
+        return transferPatient(activeAdmission, newWard);
+    }
 
     // UC05 - Update Bed Status
     public void updateBedStatus(Bed bed, BedStatus newStatus) {
@@ -83,11 +115,18 @@ public class HospitalController {
 
     // UC03 - Generate System Report
     public Report generateReport(String type, String period) {
+        return generateReport(type, period, false);
+    }
+    public Report generateReport(String type, String period, boolean includeUserData) {
         Report report = new Report(generateId("R"), type, period);
         if ("Occupancy".equals(type)) {
             report.setData(dataStore.findAllWards());
         } else if ("Admissions".equals(type)) {
             report.setData(dataStore.findAllAdmissions());
+        }
+
+        if (includeUserData) {
+            report.setUserData(dataStore.findAllUsers());
         }
         return report;
     }

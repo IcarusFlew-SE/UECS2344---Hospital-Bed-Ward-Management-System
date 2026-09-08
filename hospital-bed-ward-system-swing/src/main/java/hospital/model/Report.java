@@ -1,7 +1,8 @@
 package hospital.model;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Report {
 	private String reportId;
@@ -9,6 +10,7 @@ public class Report {
     private String period;
     private LocalDate generatedDate;
     private List<?> data;
+    private List<?> userData = new ArrayList<>();
 
     public Report(String reportId, String reportType, String period) {
         this.reportId = reportId;
@@ -25,4 +27,7 @@ public class Report {
     
     public void setData(List<?> data) {this.data = data;}
     public List<?> getData() {return data;}
+
+    public void setUserData(List<?> userData) { this.userData = userData; }
+    public List<?> getUserData() { return userData; }
 }

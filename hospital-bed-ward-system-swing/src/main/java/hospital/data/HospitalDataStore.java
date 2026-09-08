@@ -1,7 +1,14 @@
 package hospital.data;
 
-import java.util.*;
-import hospital.model.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import hospital.model.Admission;
+import hospital.model.Bed;
+import hospital.model.Notification;
+import hospital.model.Patient;
+import hospital.model.User;
+import hospital.model.Ward;
 
 public class HospitalDataStore {
 	private List<Ward> wards = new ArrayList<>();
@@ -69,6 +76,14 @@ public class HospitalDataStore {
 	public User findUserById(String userId) {
         for (User u : users) {
             if (u.getUserId().equals(userId)) return u;
+        }
+        return null;
+    }
+    public Patient findPatientById(String patientId) {
+        for (User u : users) {
+            if (u instanceof Patient p && p.getUserId().equalsIgnoreCase(patientId)) {
+                return p;
+            }
         }
         return null;
     }

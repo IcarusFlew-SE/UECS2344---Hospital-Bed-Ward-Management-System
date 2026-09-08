@@ -1,15 +1,25 @@
 package hospital.app;
 
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
 import hospital.model.Admission;
 import hospital.model.Patient;
 import hospital.model.Ward;
-
-import javax.swing.*;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.List;
 
 // UC02 - Transfer Patient. The Doctor picks an active admission and a destination ward.
 // Also covers UC01 flow 6a (Cancel) and UC07 (Patient views own admission), since all
@@ -85,7 +95,7 @@ public class TransferUI extends JPanel {
 	}
 
 	// Doctor selects the Patient's active Admission
-	public void loadActiveAdmissions() {
+	public final void loadActiveAdmissions() {
 		admissionBox.removeAllItems();
 		for (Admission a : dataStore.findActiveAdmissions()) {
 			admissionBox.addItem(a);
@@ -100,22 +110,30 @@ public class TransferUI extends JPanel {
 	// Doctor confirms the transfer; the controller records it and updates both beds
 	public void submitTransfer(Admission admission, Ward destination) {
 		if (admission == null || destination == null) {
-			resultLabel.setText("Select an active admission and a destination ward.");
+			String msg = "Select an active admission and a destination ward.";
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Input Warning", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		if (admission.getWard() == destination) {
-			resultLabel.setText("Patient is already in " + destination.getWardName() + ".");
+			String msg = "Patient is already in " + destination.getWardName() + ".";
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Same Ward Selected", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
 		boolean ok = controller.transferPatient(admission, destination);
 		if (ok) {
-			resultLabel.setText(admission.getPatient().getName() + " transferred to "
-					+ destination.getWardName() + ", bed " + admission.getBed().getBedId() + ".");
+			String msg = admission.getPatient().getName() + " transferred to "
+					+ destination.getWardName() + ", bed " + admission.getBed().getBedId() + ".";
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Transfer Successful", JOptionPane.INFORMATION_MESSAGE);
 			loadActiveAdmissions();
 		} else {
 			// UC02 alt flow 3a - destination ward is at full capacity
-			resultLabel.setText(destination.getWardName() + " is at full capacity. Select another ward.");
+			String msg = destination.getWardName() + " is at full capacity. Select another ward.";
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Ward Capacity Full", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
