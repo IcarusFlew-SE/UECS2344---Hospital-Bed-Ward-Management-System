@@ -10,36 +10,47 @@ import hospital.controller.HospitalController;
 import hospital.model.Admission;
 import hospital.model.Doctor;
 import hospital.model.Patient;
+import hospital.model.User;
 import hospital.model.Ward;
 
 // One purpose: admit patient
 public class AdmissionUI extends JPanel {
 	private final HospitalController controller;
 	private final JComboBox<Patient> patientBox = new JComboBox<>();
+	private final JComboBox<Doctor> doctorBox = new JComboBox<>();
 	private final JComboBox<Ward> wardBox = new JComboBox<>();
 	private final JLabel resultLabel = new JLabel(" ");
 
-	public AdmissionUI(HospitalController controller, List<Patient> patients, List<Ward> wards) {
+	public AdmissionUI(HospitalController controller, List<Patient> patients,
+			List<Doctor> doctors, List<Ward> wards) {
 		this.controller = controller;
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
 		for (Patient p : patients) patientBox.addItem(p);
+		for (Doctor d : doctors) doctorBox.addItem(d);
 		for (Ward w : wards) wardBox.addItem(w);
 		patientBox.setRenderer(namedUserRenderer());
+		doctorBox.setRenderer(namedUserRenderer());
 		wardBox.setRenderer(wardRenderer());
 		patientBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, patientBox.getPreferredSize().height));
+		doctorBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, doctorBox.getPreferredSize().height));
 		wardBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, wardBox.getPreferredSize().height));
 
 		JButton submitBtn = new JButton("Admit Patient");
+		// UC01 - the admitting Doctor is recorded on the Admission ("Doctor manages Admission")
 		submitBtn.addActionListener(e -> submitAdmission(
 				(Patient) patientBox.getSelectedItem(),
+				(Doctor) doctorBox.getSelectedItem(),
 				(Ward) wardBox.getSelectedItem()));
 
 		add(label("Admit Patient"));
 		add(Box.createVerticalStrut(10));
 		add(label("Patient:"));
 		add(patientBox);
+		add(Box.createVerticalStrut(8));
+		add(label("Admitting Doctor:"));
+		add(doctorBox);
 		add(Box.createVerticalStrut(8));
 		add(label("Ward:"));
 		add(wardBox);
@@ -50,23 +61,10 @@ public class AdmissionUI extends JPanel {
 	}
 
 	// Doctor use AdmissionUI: submitAdmission
+	// Kept for callers that do not record an admitting Doctor; delegates so both paths
+	// share one implementation.
 	public void submitAdmission(Patient patient, Ward ward) {
-		if (patient == null || ward == null) {
-			resultLabel.setText("Select a patient and a ward first.");
-			return;
-		}
-		try {
-			Admission result = controller.admitPatient(patient, ward);
-			if (result != null) {
-				resultLabel.setText("Admitted. Bed assigned: " + result.getBed().getBedId());
-			} else {
-				// UC01 alt flow 4a - no beds available in the selected ward
-				resultLabel.setText("No bed available in " + ward.getWardName() + ". Select another ward.");
-			}
-		} catch (IllegalStateException ex) {
-			// UC01 alt flow 3a - the patient already has an active admission
-			resultLabel.setText(ex.getMessage());
-		}
+		submitAdmission(patient, null, ward);
 	}
 
 	// Overload for submitAdmission
@@ -105,7 +103,7 @@ public class AdmissionUI extends JPanel {
 			public Component getListCellRendererComponent(JList<?> list, Object value, int index,
 					boolean isSelected, boolean cellHasFocus) {
 				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (value instanceof Patient p) setText(p.getName());
+				if (value instanceof User u) setText(u.getName());
 				return this;
 			}
 		};

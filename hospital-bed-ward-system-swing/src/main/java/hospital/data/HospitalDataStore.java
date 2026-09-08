@@ -88,10 +88,13 @@ public class HospitalDataStore {
         return null;
     }
 
+    // A null userId means "no particular user is logged in", so show every notification
+    // (broadcast and targeted). Filtering on null previously hid every targeted
+    // notification, because "U2".equals(null) is false.
     public List<Notification> findNotificationsByUser(String userId) {
         List<Notification> result = new ArrayList<>();
         for (Notification n : notifications) {
-            if (n.getRecipientId() == null || n.getRecipientId().equals(userId)) {
+            if (userId == null || n.getRecipientId() == null || n.getRecipientId().equals(userId)) {
                 result.add(n);
             }
         }
