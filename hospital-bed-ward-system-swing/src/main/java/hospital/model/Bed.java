@@ -18,7 +18,7 @@ public class Bed {
 	
 	public String getBedId() {return bedId;}
 	public BedStatus getStatus() {return status;}
-	public LocalDate getLasCleanedDate() {return lastCleanedDate;}
+	public LocalDate getLastCleanedDate() {return lastCleanedDate;}
 	
 	public void updateBedStatus(BedStatus newStatus) {
 		if (this.status == BedStatus.OCCUPIED && newStatus == BedStatus.RESERVED) {
