@@ -1,15 +1,23 @@
 package hospital.app;
 
-import javax.swing.*;
 import java.awt.Component;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
-import hospital.model.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.time.LocalDate;
+import hospital.model.Admin;
+import hospital.model.Bed;
+import hospital.model.Doctor;
+import hospital.model.Nurse;
+import hospital.model.Patient;
+import hospital.model.User;
+import hospital.model.Ward;
 
 public class Main {
 

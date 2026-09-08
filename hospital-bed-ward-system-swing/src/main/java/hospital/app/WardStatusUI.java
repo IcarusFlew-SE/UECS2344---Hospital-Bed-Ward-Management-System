@@ -1,14 +1,24 @@
 package hospital.app;
 
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
 import hospital.controller.HospitalController;
 import hospital.model.Bed;
 import hospital.model.BedStatus;
 import hospital.model.Ward;
-
-import javax.swing.*;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.List;
 
 public class WardStatusUI extends JPanel {
 	private final HospitalController controller;
@@ -58,7 +68,7 @@ public class WardStatusUI extends JPanel {
 	}
 
 	// UC10 - reload the beds of the selected ward so their current status is always shown
-	public void refreshBeds() {
+	public final void refreshBeds() {
 		Ward selected = (Ward) wardBox.getSelectedItem();
 		Bed previous = (Bed) bedBox.getSelectedItem();
 		bedBox.removeAllItems();
@@ -70,16 +80,22 @@ public class WardStatusUI extends JPanel {
 	// Nurse use WardStatusUI: select bed for bed status
 	public void selectBed(Bed bed, BedStatus newStatus) {
 		if (bed == null || newStatus == null) {
-			resultLabel.setText("Select a bed and a status first.");
+			String msg = "Select a bed and a status first.";
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Input Warning", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		try {
 			controller.updateBedStatus(bed, newStatus);
-			resultLabel.setText(bed.getBedId() + " is now " + newStatus);
+			String msg = bed.getBedId() + " is now " + newStatus;
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, msg, "Status Updated", JOptionPane.INFORMATION_MESSAGE);
 			refreshBeds();
 		} catch (IllegalStateException ex) {
 			// UC05 alt flow 3a - invalid status transition, the system informs the Nurse
-			resultLabel.setText("Rejected: " + ex.getMessage());
+			String msg = "Rejected: " + ex.getMessage();
+			resultLabel.setText(msg);
+			JOptionPane.showMessageDialog(this, ex.getMessage(), "Update Rejected", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 

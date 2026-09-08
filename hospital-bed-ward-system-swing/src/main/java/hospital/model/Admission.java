@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public class Admission {
 	private String admissionId;
 	private Patient patient;
+	private Doctor doctor;
 	private Bed bed;
 	private Ward ward;
 	private LocalDate admissionDate;
@@ -25,6 +26,9 @@ public class Admission {
 	public Bed getBed() {return bed;}
 	public Ward getWard() {return ward;}
 	public AdmissionStatus getStatus() {return status;}
+	
+	public Doctor getDoctor() {return doctor;}
+	public void setDoctor(Doctor doctor) {this.doctor = doctor;}
 	
 	public void discharge() {
 		this.status = AdmissionStatus.DISCHARGED;
