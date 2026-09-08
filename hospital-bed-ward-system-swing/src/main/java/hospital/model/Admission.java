@@ -31,6 +31,9 @@ public class Admission {
 	public void setDoctor(Doctor doctor) {this.doctor = doctor;}
 	
 	public void discharge() {
+		if (!isActive()) {
+			throw new IllegalStateException("Only an active admission (Admitted or Transferred) can be discharged.");
+		}
 		this.status = AdmissionStatus.DISCHARGED;
 		this.dischargeDate = LocalDate.now();
 		this.bed.updateBedStatus(BedStatus.CLEANING);

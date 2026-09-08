@@ -9,7 +9,7 @@ import java.awt.FlowLayout;
 
 public class NotificationUI extends JPanel {
 	private final HospitalDataStore dataStore;
-	private final String currentUserId;
+	private String currentUserId;
 	private final DefaultListModel<String> listModel = new DefaultListModel<>();
 	private final JList<String> listView = new JList<>(listModel);
 
@@ -42,6 +42,12 @@ public class NotificationUI extends JPanel {
 		viewNotifications();
 	}
 
+	// Called when the "Acting as" selector in Main changes
+		public void setCurrentUserId(String userId) {
+			this.currentUserId = userId;
+			viewNotifications();
+		}
+		
 	// Actor (User) request notifications, and views them then mark as read
 	public void viewNotifications() {
 		listModel.clear();

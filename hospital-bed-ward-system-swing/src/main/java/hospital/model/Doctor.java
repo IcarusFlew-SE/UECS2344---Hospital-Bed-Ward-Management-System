@@ -17,6 +17,7 @@ public class Doctor extends User {
 	
 	@Override
 	public List<String> getPermissions() {
-		return List.of("ADMIT_PATIENT", "TRANSFER_PATIENT", "VIEW_ADMISSION");
+		return List.of("ADMIT_PATIENT", "TRANSFER_PATIENT", "VIEW_ADMISSION",
+				"VIEW_WARD_STATUS", "MANAGE_OWN_PROFILE");
 	}
 }

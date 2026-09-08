@@ -10,17 +10,19 @@ public class Transfer {
     private LocalDate transferDate;
     private String description;
     
-    public Transfer(String transferId, Ward fromWard, Ward toWard, Bed toBed) {
+    public Transfer(String transferId, Ward fromWard, Ward toWard, Bed toBed, String description) {
         this.transferId = transferId;
         this.fromWard = fromWard;
         this.toWard = toWard;
         this.toBed = toBed;
         this.transferDate = LocalDate.now();
+        this.description = description;
     }
     
     public Ward getFromWard() { return fromWard; }
     public Ward getToWard() { return toWard; }
     public Bed getToBed() { return toBed; }
+    public String getDescription() { return description; }
     
     public String getSummary() {
         return "Transferred from " + fromWard.getWardName() + " to " + toWard.getWardName()

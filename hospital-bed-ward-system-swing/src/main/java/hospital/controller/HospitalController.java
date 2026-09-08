@@ -47,9 +47,17 @@ public class HospitalController {
 
         // Notify if ward reached capacity
         if (ward.isAtCapacity()) {
-            notify("Ward " + ward.getWardName() + " has reached capacity.");
+            // UC01 flow 7 - capacity alerts are targeted at Admin specifically, not broadcast
+            notifyAllWithPermission("Ward " + ward.getWardName() + " has reached capacity.", "MANAGE_WARDS");
         }
         return admission;
+    }
+
+    // UC01 - the normal, successful conclusion of an admission (previously missing:
+    // Admission.discharge() and AdmissionStatus.DISCHARGED already existed in the
+    // model but nothing ever called this path)
+    public void dischargePatient(Admission admission) {
+        admission.discharge();
     }
 
     // UC01 alt flow 6a - cancel before discharge
@@ -66,9 +74,16 @@ public class HospitalController {
         }
         admission.getBed().updateBedStatus(BedStatus.CLEANING);
         newBed.updateBedStatus(BedStatus.OCCUPIED);
-        Transfer transfer = new Transfer(generateId("T"), admission.getWard(), newWard, newBed);
+        Transfer transfer = new Transfer(generateId("T"), admission.getWard(), newWard, newBed,
+                "Transfer of " + admission.getPatient().getName());
         admission.recordTransfer(transfer);
-        notify("Patient transferred to " + newWard.getWardName());
+        // UC02 - notify the destination ward's nurse specifically, not everyone
+        Nurse destinationNurse = findNurseForWard(newWard);
+        if (destinationNurse != null) {
+            notify("Patient transferred to " + newWard.getWardName(), destinationNurse.getUserId());
+        } else {
+            notify("Patient transferred to " + newWard.getWardName());
+        }
         return true;
     }
     // Id based overload to match lifeline in SD UC02
@@ -130,20 +145,68 @@ public class HospitalController {
         }
         Ward previous = nurse.getAssignedWard();
         nurse.updateAssignment(ward, shift);
+        // UC04 flow 4 - notify the nurse being (re)assigned specifically, not everyone
         if (conflict) {
             notify("Nurse " + nurse.getName() + " relocated from " + previous.getWardName()
-                    + " to " + ward.getWardName());
+                    + " to " + ward.getWardName(), nurse.getUserId());
         } else {
-            notify("Nurse " + nurse.getName() + " assigned to " + ward.getWardName());
+            notify("Nurse " + nurse.getName() + " assigned to " + ward.getWardName(), nurse.getUserId());
         }
         return true;
     }
 
-    // Used by every method above - matches the "self-notify" call in the sequence diagrams
+    // UC09 Sub-flow S1 - Create a new user account
+    public void createUser(User user) {
+        dataStore.saveUser(user);
+    }
+
+    // UC09 Sub-flow S3 - Update contact details
+    public void updateUserContact(User user, String newContact) {
+        user.updateContact(newContact);
+    }
+
+    // UC09 Sub-flow S4 - Deactivate an account
+    public void deactivateUser(User user) {
+        user.deactivate();
+    }
+
+    // Used by every method above - matches the "self-notify" call in the sequence diagrams.
+    // Broadcast version: recipientId stays null, every actor sees it.
     public void notify(String message) {
         Notification n = new Notification(message);
         dataStore.saveNotification(n);
         System.out.println("[ALERT] " + message); // UI layer shows a real pop-up for live sessions
+    }
+
+    // Targeted version: only the named recipient sees it.
+    public void notify(String message, String recipientId) {
+        Notification n = new Notification(message);
+        n.setRecipientId(recipientId);
+        dataStore.saveNotification(n);
+        System.out.println("[ALERT to " + recipientId + "] " + message);
+    }
+
+    // Helper for capacity alerts - finds every currently active user whose role permits
+    // managing wards (i.e. Admin), since a capacity issue is an administrative concern.
+    private void notifyAllWithPermission(String message, String requiredPermission) {
+        boolean anyNotified = false;
+        for (User u : dataStore.findAllUsers()) {
+            if (u.isActive() && u.getPermissions().contains(requiredPermission)) {
+                notify(message, u.getUserId());
+                anyNotified = true;
+            }
+        }
+        if (!anyNotified) {
+            notify(message); // fall back to broadcast if nobody currently holds that permission
+        }
+    }
+
+    // Helper for UC02 - finds the nurse currently assigned to a given ward, if any
+    private Nurse findNurseForWard(Ward ward) {
+        for (User u : dataStore.findAllUsers()) {
+            if (u instanceof Nurse n && n.getAssignedWard() == ward) return n;
+        }
+        return null;
     }
 
     private String generateId(String prefix) {
