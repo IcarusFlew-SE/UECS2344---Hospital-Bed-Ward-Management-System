@@ -7,9 +7,7 @@ public abstract class User {
 	private String name;
 	private String contact;
 	private String email;
-	// A newly created account is active until it is explicitly deactivated (UC09 S4).
-	// Without this initialiser Java defaults it to false, so every user would be
-	// created already deactivated.
+	// Newly created accounts are active by default.
 	private boolean active = true;
 	
 	protected User(String userId, String name, String contact, String email) {

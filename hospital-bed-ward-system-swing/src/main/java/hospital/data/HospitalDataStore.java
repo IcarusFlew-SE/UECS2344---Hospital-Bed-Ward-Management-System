@@ -1,14 +1,7 @@
 package hospital.data;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import hospital.model.Admission;
-import hospital.model.Bed;
-import hospital.model.Notification;
-import hospital.model.Patient;
-import hospital.model.User;
-import hospital.model.Ward;
+import java.util.*;
+import hospital.model.*;
 
 public class HospitalDataStore {
 	private List<Ward> wards = new ArrayList<>();
@@ -17,6 +10,7 @@ public class HospitalDataStore {
 	private List<Notification> notifications = new ArrayList<>();
 	
 	public Bed findAvailableBed(Ward ward) {
+		if (ward == null) return null;
 		return ward.findAvailableBed();
 	}
 	
@@ -36,27 +30,34 @@ public class HospitalDataStore {
 		notifications.add(n);
 	}
 	
-    public List<Ward> findAllWards() { return wards; }
-    public List<Admission> findAllAdmissions() { return admissions; }
-    public List<User> findAllUsers() { return users; }
+	// Return unmodifiable lists to avoid external mutation of the in-memory store.
+	public List<Ward> findAllWards() { return Collections.unmodifiableList(wards); }
+	public List<Admission> findAllAdmissions() { return Collections.unmodifiableList(admissions); }
+	public List<User> findAllUsers() { return Collections.unmodifiableList(users); }
 
-    // UC01 alt flow 3a - a Patient may hold at most one active Admission (assumption 2)
+    // A Patient may hold at most one active Admission (assumption)
     public Admission findActiveAdmissionByPatient(Patient patient) {
+        if (patient == null) return null;
         for (Admission a : admissions) {
-            if (a.getPatient() == patient && a.isActive()) return a;
+            if (a.getPatient() != null
+                    && a.getPatient().getUserId().equals(patient.getUserId())
+                    && a.isActive()) return a;
         }
         return null;
     }
 
-    // UC05 - a Bed still held by an active Admission must not be freed
+    // A Bed held by an active Admission must not be freed
     public Admission findActiveAdmissionByBed(Bed bed) {
+        if (bed == null) return null;
         for (Admission a : admissions) {
-            if (a.getBed() == bed && a.isActive()) return a;
+            if (a.getBed() != null
+                    && bed.getBedId().equals(a.getBed().getBedId())
+                    && a.isActive()) return a;
         }
         return null;
     }
 
-    // UC02 - the Doctor picks from the currently active admissions
+    // Return active admissions
     public List<Admission> findActiveAdmissions() {
         List<Admission> result = new ArrayList<>();
         for (Admission a : admissions) {
@@ -65,11 +66,11 @@ public class HospitalDataStore {
         return result;
     }
 
-    // UC07 - Patient views their own admission history, active or past
+    // Patient views own admission history
     public List<Admission> findAdmissionsByPatient(String patientId) {
         List<Admission> result = new ArrayList<>();
         for (Admission a : admissions) {
-            if (a.getPatient().getUserId().equals(patientId)) result.add(a);
+            if (a.getPatient() != null && a.getPatient().getUserId().equals(patientId)) result.add(a);
         }
         return result;
     }
@@ -88,17 +89,32 @@ public class HospitalDataStore {
         return null;
     }
 
-    // A null userId means "no particular user is logged in", so show every notification
-    // (broadcast and targeted). Filtering on null previously hid every targeted
-    // notification, because "U2".equals(null) is false.
+    // A null userId shows broadcast and targeted notifications
     public List<Notification> findNotificationsByUser(String userId) {
         List<Notification> result = new ArrayList<>();
         for (Notification n : notifications) {
+            // if userId==null show broadcast and targeted notifications
             if (userId == null || n.getRecipientId() == null || n.getRecipientId().equals(userId)) {
                 result.add(n);
             }
         }
         return result;
     }
-	
+
+    // Returns every Nurse in the user list – convenience method for UI panels.
+    public List<Nurse> findAllNurses() {
+        List<Nurse> result = new ArrayList<>();
+        for (User u : users) {
+            if (u instanceof Nurse n) result.add(n);
+        }
+        return result;
+    }
+
+    // Simulated credential check used by LoginUI: demo password matches any active user.
+    public User findUserByCredentials(String userId, String password) {
+        User u = findUserById(userId);
+        if (u != null && u.isActive() && "demo123".equals(password)) return u;
+        return null;
+    }
+
 }

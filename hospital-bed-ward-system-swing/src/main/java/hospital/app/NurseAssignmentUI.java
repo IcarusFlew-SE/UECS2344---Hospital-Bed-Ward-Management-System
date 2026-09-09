@@ -1,114 +1,204 @@
 package hospital.app;
 
 import hospital.controller.HospitalController;
-import hospital.model.Nurse;
-import hospital.model.Ward;
+import hospital.data.HospitalDataStore;
+import hospital.model.*;
 
 import javax.swing.*;
-import java.awt.Component;
-import java.awt.Dimension;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.util.List;
 
+// NurseAssignmentUI - assign nurses to wards and view assignments
 public class NurseAssignmentUI extends JPanel {
-	private final HospitalController controller;
-	private final JComboBox<Nurse> nurseBox = new JComboBox<>();
-	private final JComboBox<Ward> wardBox = new JComboBox<>();
-	private final JTextField shiftField = new JTextField();
-	private final JLabel resultLabel = new JLabel(" ");
 
-	public NurseAssignmentUI(HospitalController controller, List<Nurse> nurses, List<Ward> wards) {
-		this.controller = controller;
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+    private final HospitalController controller;
+    private final HospitalDataStore dataStore;
 
-		for (Nurse n : nurses) nurseBox.addItem(n);
-		for (Ward w : wards) wardBox.addItem(w);
-		nurseBox.setRenderer(nurseRenderer());
-		wardBox.setRenderer(wardRenderer());
-		shiftField.setToolTipText("e.g Morning");
-		nurseBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, nurseBox.getPreferredSize().height));
-		wardBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, wardBox.getPreferredSize().height));
-		shiftField.setMaximumSize(new Dimension(Integer.MAX_VALUE, shiftField.getPreferredSize().height));
+    private final JComboBox<Nurse> nurseBox = new JComboBox<>();
+    private final JComboBox<Ward> wardBox = new JComboBox<>();
+    private final JComboBox<String> shiftBox = new JComboBox<>();
+    private final JLabel resultLbl = new JLabel(" ");
 
-		JButton submitBtn = new JButton("Assign Nurse");
-		submitBtn.addActionListener(e -> assignNurse(
-				(Nurse) nurseBox.getSelectedItem(),
-				(Ward) wardBox.getSelectedItem(),
-				shiftField.getText()));
+    // Assignment summary table
+    private final String[] ASSIGN_COLS = {"Nurse", "Assigned Ward", "Shift", "Status"};
+    private final DefaultTableModel assignModel = new DefaultTableModel(ASSIGN_COLS, 0) {
+        @Override public boolean isCellEditable(int r, int c) { return false; }
+    };
+    private final JTable assignTable = new JTable(assignModel);
 
-		add(label("Assign Nurse to Ward"));
-		add(Box.createVerticalStrut(10));
-		add(label("Nurse:"));
-		add(nurseBox);
-		add(Box.createVerticalStrut(8));
-		add(label("Ward:"));
-		add(wardBox);
-		add(Box.createVerticalStrut(8));
-		add(label("Shift:"));
-		add(shiftField);
-		add(Box.createVerticalStrut(10));
-		add(submitBtn);
-		add(Box.createVerticalStrut(8));
-		add(resultLabel);
-	}
+    public NurseAssignmentUI(HospitalController controller, HospitalDataStore dataStore, List<Ward> wards) {
+        this.controller = controller;
+        this.dataStore = dataStore;
 
-	// Admin assign Nurse
-	public void assignNurse(Nurse nurse, Ward ward, String shift) {
-		if (nurse == null || ward == null || shift == null || shift.isBlank()) {
-			resultLabel.setText("Select a nurse, a ward, and enter a shift.");
-			return;
-		}
+        setLayout(new BorderLayout(0, 12));
+        setBackground(AppTheme.SURFACE);
+        setBorder(AppTheme.pagePadding());
 
-		boolean ok = controller.assignNurseToWard(nurse, ward, shift);
+        // Form card
+        // Nurses are loaded dynamically from the data store so newly created nurses appear
+        reloadNurses();
+        for (Ward w : wards) wardBox.addItem(w);
+        shiftBox.addItem("Morning");
+        shiftBox.addItem("Afternoon");
+        shiftBox.addItem("Night");
 
-		if (ok) {
-			resultLabel.setText(nurse.getName() + " assigned to " + ward.getWardName() + " (" + shift + ").");
-			return;
-		}
+        nurseBox.setRenderer(nurseRenderer());
+        wardBox.setRenderer(wardRenderer());
+        AppTheme.sizeCombo(nurseBox);
+        AppTheme.sizeCombo(wardBox);
+        AppTheme.sizeCombo(shiftBox);
 
-		// UC04 alt flow 3a - warn the Admin about a conflicting shift
-		int choice = JOptionPane.showConfirmDialog(this,
-				nurse.getName() + " already has a " + nurse.getShift() + " shift at "
-						+ nurse.getAssignedWard().getWardName()
-						+ ".\nRelocate to " + ward.getWardName() + " (" + shift + ")?",
-				"Schedule Conflict", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        resultLbl.setFont(AppTheme.FONT_BODY);
+        resultLbl.setForeground(AppTheme.TEXT_SECONDARY);
 
-		if (choice == JOptionPane.YES_OPTION) {
-			controller.assignNurseToWard(nurse, ward, shift, true);
-			resultLabel.setText(nurse.getName() + " relocated to " + ward.getWardName() + " (" + shift + ").");
-		} else {
-			resultLabel.setText("Assignment cancelled. " + nurse.getName() + " stays in "
-					+ nurse.getAssignedWard().getWardName() + ".");
-		}
-	}
+        JButton assignBtn  = AppTheme.primaryButton("👩‍⚕️  Assign Nurse");
+        JButton refreshBtn = AppTheme.secondaryButton("↺  Refresh");
+        assignBtn.addActionListener(e  -> assignNurse(
+                (Nurse) nurseBox.getSelectedItem(),
+                (Ward)  wardBox.getSelectedItem(),
+                (String) shiftBox.getSelectedItem()));
+        refreshBtn.addActionListener(e -> refreshAssignmentTable());
 
-	private static JLabel label(String text) {
-		JLabel l = new JLabel(text);
-		l.setAlignmentX(Component.LEFT_ALIGNMENT);
-		return l;
-	}
+        JPanel formGrid = new JPanel(new GridBagLayout());
+        formGrid.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(6, 0, 6, 10);
 
-	private static DefaultListCellRenderer nurseRenderer() {
-		return new DefaultListCellRenderer() {
-			@Override
-			public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-					boolean isSelected, boolean cellHasFocus) {
-				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (value instanceof Nurse n) setText(n.getName());
-				return this;
-			}
-		};
-	}
+        addRow(formGrid, gbc, 0, "Nurse:", nurseBox);
+        addRow(formGrid, gbc, 1, "Ward:",  wardBox);
+        addRow(formGrid, gbc, 2, "Shift:", shiftBox);
 
-	private static DefaultListCellRenderer wardRenderer() {
-		return new DefaultListCellRenderer() {
-			@Override
-			public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-					boolean isSelected, boolean cellHasFocus) {
-				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (value instanceof Ward w) setText(w.getWardName());
-				return this;
-			}
-		};
-	}
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1; gbc.insets = new Insets(12, 0, 0, 10);
+        formGrid.add(assignBtn, gbc);
+        gbc.gridx = 1; gbc.insets = new Insets(12, 0, 0, 10);
+        formGrid.add(refreshBtn, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; gbc.insets = new Insets(4, 0, 0, 0);
+        formGrid.add(resultLbl, gbc);
+
+        JPanel formCard = new JPanel(new BorderLayout());
+        formCard.setBackground(AppTheme.CARD);
+        formCard.setBorder(AppTheme.sectionBorder("Assign Nurse to Ward"));
+        formCard.add(formGrid, BorderLayout.CENTER);
+
+        // Assignment summary table
+        AppTheme.styleTable(assignTable);
+        JScrollPane tableScroll = new JScrollPane(assignTable);
+        AppTheme.styleScrollPane(tableScroll);
+
+        JPanel tableCard = new JPanel(new BorderLayout());
+        tableCard.setBackground(AppTheme.CARD);
+        tableCard.setBorder(AppTheme.sectionBorder("Current Nurse Assignments"));
+        tableCard.add(tableScroll, BorderLayout.CENTER);
+
+        add(formCard,  BorderLayout.NORTH);
+        add(tableCard, BorderLayout.CENTER);
+
+        refreshAssignmentTable();
+    }
+
+    // Actions
+
+    public void assignNurse(Nurse nurse, Ward ward, String shift) {
+        if (nurse == null || ward == null || shift == null || shift.isBlank()) {
+            showStatus("Select a nurse, a ward, and a shift.", false);
+            return;
+        }
+
+        boolean ok = controller.assignNurseToWard(nurse, ward, shift);
+
+        if (ok) {
+            showStatus("✔  " + nurse.getName() + " assigned to " + ward.getWardName()
+                    + " (" + shift + ").", true);
+            refreshAssignmentTable();
+            return;
+        }
+
+        // UC04 alt flow 3a – shift conflict
+        String conflictMsg = nurse.getName() + " already has a " + nurse.getShift()
+                + " shift at " + nurse.getAssignedWard().getWardName()
+                + ".\nRelocate to " + ward.getWardName() + " (" + shift + ")?";
+        int choice = JOptionPane.showConfirmDialog(this, conflictMsg,
+                "Schedule Conflict", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (choice == JOptionPane.YES_OPTION) {
+            controller.assignNurseToWard(nurse, ward, shift, true);
+            showStatus("✔  " + nurse.getName() + " relocated to "
+                    + ward.getWardName() + " (" + shift + ").", true);
+        } else {
+            showStatus("Assignment cancelled. " + nurse.getName()
+                    + " stays in " + nurse.getAssignedWard().getWardName() + ".", false);
+        }
+        refreshAssignmentTable();
+    }
+
+    public void refreshAssignmentTable() {
+        reloadNurses();
+        assignModel.setRowCount(0);
+        for (Nurse n : dataStore.findAllNurses()) {
+            Ward assigned = n.getAssignedWard();
+            assignModel.addRow(new Object[]{
+                n.getName(),
+                assigned != null ? assigned.getWardName() : "— Unassigned —",
+                n.getShift() != null ? n.getShift() : "—",
+                n.isActive() ? "Active" : "Inactive"
+            });
+        }
+    }
+
+    // Reload nurse combo from live data store (picks up newly created nurses)
+    private void reloadNurses() {
+        Object prev = nurseBox.getSelectedItem();
+        nurseBox.removeAllItems();
+        for (Nurse n : dataStore.findAllNurses()) nurseBox.addItem(n);
+        if (prev != null) nurseBox.setSelectedItem(prev);
+    }
+
+    // Helpers
+
+    private void showStatus(String msg, boolean success) {
+        resultLbl.setText(msg);
+        resultLbl.setForeground(success ? AppTheme.SUCCESS : AppTheme.DANGER);
+    }
+
+    private static void addRow(JPanel p, GridBagConstraints gbc, int row,
+                               String text, JComponent field) {
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 1; gbc.weightx = 0;
+        gbc.insets = new Insets(6, 0, 6, 10);
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(AppTheme.FONT_BODY.deriveFont(Font.BOLD));
+        lbl.setForeground(AppTheme.TEXT_PRIMARY);
+        p.add(lbl, gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        p.add(field, gbc);
+    }
+
+    private static DefaultListCellRenderer nurseRenderer() {
+        return new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Nurse n)
+                    setText(n.getName() + "  (" + n.getShift() + " shift)");
+                setFont(AppTheme.FONT_BODY);
+                return this;
+            }
+        };
+    }
+
+    private static DefaultListCellRenderer wardRenderer() {
+        return new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Ward w) setText(w.getWardName());
+                setFont(AppTheme.FONT_BODY);
+                return this;
+            }
+        };
+    }
 }
