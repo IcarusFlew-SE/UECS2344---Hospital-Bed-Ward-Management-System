@@ -1,0 +1,30 @@
+# Hospital Bed & Ward Management System - Seed Data
+# Format: field1|field2|field3|...
+
+[WARDS]
+# wardId|wardName|capacity|description|bedIds
+W1|General Ward|4|General|G-01,G-02,G-03,G-04
+W2|ICU|2|Intensive Care|ICU-01,ICU-02
+W3|Pediatric Ward|3|Pediatrics|P-01,P-02,P-03
+W4|Maternity Ward|2|Maternity|M-01,M-02
+
+[PATIENTS]
+# userId|name|phone|email|dateOfBirth
+P1|Ali Bin Ahmad|0123456789|ali@mail.com|1990-01-01
+P2|Mei Ling|0121111111|mei@mail.com|1985-05-05
+P3|Rajesh Kumar|0139876543|raj@mail.com|1978-11-20
+P4|Siti Aminah|0117654321|siti@mail.com|2000-03-15
+
+[NURSES]
+# userId|name|phone|email|shift
+N1|Ben Lee|0129999999|ben@mail.com|Morning
+N2|Nurul Huda|0122345678|nurul@mail.com|Evening
+
+[DOCTORS]
+# userId|name|phone|email|specialty|department
+D1|Dr. Alice Tan|0126666666|alice@mail.com|Medicine|General
+D2|Dr. Hafiz Malik|0115556677|hafiz@mail.com|Pediatrics|Pediatrics
+
+[ADMINS]
+# userId|name|phone|email|accessLevel
+A1|Chloe Wong|0127777777|chloe@mail.com|Full

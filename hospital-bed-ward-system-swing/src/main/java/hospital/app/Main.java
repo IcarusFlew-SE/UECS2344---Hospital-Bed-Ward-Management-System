@@ -8,6 +8,7 @@ import java.util.List;
 
 import hospital.controller.HospitalController;
 import hospital.data.HospitalDataStore;
+import hospital.data.DataLoader;
 import hospital.model.*;
 
 // Main - application entry point and UI wiring
@@ -199,57 +200,37 @@ public class Main {
 
     // Demo data
     private static void seedSampleData(HospitalDataStore ds) {
-        // Wards
-        List<Bed> generalBeds = List.of(
-            new Bed("G-01"), new Bed("G-02"), new Bed("G-03"), new Bed("G-04")
-        );
-        Ward general = new Ward("W1", "General Ward", 4, "General", generalBeds);
-
-        List<Bed> icuBeds = List.of(
-            new Bed("ICU-01"), new Bed("ICU-02")
-        );
-        Ward icu = new Ward("W2", "ICU", 2, "Intensive Care", icuBeds);
-
-        List<Bed> pediBeds = List.of(
-            new Bed("P-01"), new Bed("P-02"), new Bed("P-03")
-        );
-        Ward pediatric = new Ward("W3", "Pediatric Ward", 3, "Pediatrics", pediBeds);
-
-        List<Bed> maternityBeds = List.of(
-            new Bed("M-01"), new Bed("M-02")
-        );
-        Ward maternity = new Ward("W4", "Maternity Ward", 2, "Maternity", maternityBeds);
-
-        ds.saveWard(general);
-        ds.saveWard(icu);
-        ds.saveWard(pediatric);
-        ds.saveWard(maternity);
-
-        // Patients
-        Patient ali = new Patient("P1", "Ali Bin Ahmad", "0123456789", "ali@mail.com", LocalDate.of(1990, 1, 1));
-        Patient mei = new Patient("P2", "Mei Ling", "0121111111", "mei@mail.com", LocalDate.of(1985, 5, 5));
-        Patient raj = new Patient("P3", "Rajesh Kumar", "0139876543", "raj@mail.com", LocalDate.of(1978, 11, 20));
-        Patient siti = new Patient("P4", "Siti Aminah", "0117654321", "siti@mail.com", LocalDate.of(2000, 3, 15));
-
-        // Nurses
-        Nurse ben = new Nurse("N1", "Ben Lee", "0129999999", "ben@mail.com", "Morning");
-        Nurse nurul = new Nurse("N2", "Nurul Huda", "0122345678", "nurul@mail.com", "Evening");
-
-        // Doctors
-        Doctor alice = new Doctor("D1", "Dr. Alice Tan", "0126666666", "alice@mail.com", "Medicine", "General");
-        Doctor hafiz = new Doctor("D2", "Dr. Hafiz Malik", "0115556677", "hafiz@mail.com", "Pediatrics", "Pediatrics");
-
-        // Admin
-        Admin chloe = new Admin("A1", "Chloe Wong", "0127777777", "chloe@mail.com", "Full");
-
-        ds.saveUser(ali);
-        ds.saveUser(mei);
-        ds.saveUser(raj);
-        ds.saveUser(siti);
-        ds.saveUser(ben);
-        ds.saveUser(nurul);
-        ds.saveUser(alice);
-        ds.saveUser(hafiz);
-        ds.saveUser(chloe);
+        try {
+            DataLoader.SeedData data = DataLoader.loadSeedData();
+            
+            // Save all wards
+            for (Ward w : data.wards) {
+                ds.saveWard(w);
+            }
+            
+            // Save all users (patients, nurses, doctors, admins)
+            for (Patient p : data.patients) {
+                ds.saveUser(p);
+            }
+            for (Nurse n : data.nurses) {
+                ds.saveUser(n);
+            }
+            for (Doctor d : data.doctors) {
+                ds.saveUser(d);
+            }
+            for (Admin a : data.admins) {
+                ds.saveUser(a);
+            }
+            
+            System.out.println("Demo seed data loaded successfully:");
+            System.out.println("  - Wards: " + data.wards.size());
+            System.out.println("  - Patients: " + data.patients.size());
+            System.out.println("  - Nurses: " + data.nurses.size());
+            System.out.println("  - Doctors: " + data.doctors.size());
+            System.out.println("  - Admins: " + data.admins.size());
+        } catch (Exception e) {
+            System.err.println("Failed to load seed data: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
