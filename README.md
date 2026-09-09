@@ -3,7 +3,7 @@ Healthcare Management System (Hospital Bed &amp; Ward)
 
 ---
 ## Introduction
-
+A GUI-based Healthcare Management System setup in Maven file structure, developed using Java, Java Swing & AWT for the GUI development and core logic functions
 
 ---
 ### Core Functionalities
