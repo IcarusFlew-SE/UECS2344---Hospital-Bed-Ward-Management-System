@@ -56,23 +56,23 @@ public class Main {
         NotificationUI notifUI = new NotificationUI(ds, currentUser.getUserId());
         AccountUI accountUI = new AccountUI(hc, allUsers);
 
-        // Header bar
-        JPanel headerBar = buildHeaderBar(currentUser, allUsers, admissionUI, transferUI, wardStatusUI, nurseUI, notifUI, accountUI);
+         // Tab pane
+         JTabbedPane tabs = new JTabbedPane();
+         tabs.setFont(AppTheme.FONT_BODY.deriveFont(Font.BOLD));
 
-        // Tab pane
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.setFont(AppTheme.FONT_BODY.deriveFont(Font.BOLD));
+         tabs.addTab(" Admit Patient", admissionUI);
+         tabs.addTab(" Transfer / Cancel", transferUI);
+         tabs.addTab(" Ward Status", wardStatusUI);
+         tabs.addTab(" Reports", reportUI);
+         tabs.addTab(" Assign Nurse", nurseUI);
+         tabs.addTab(" Notifications", notifUI);
+         tabs.addTab(" Accounts", accountUI);
 
-        tabs.addTab(" Admit Patient", admissionUI);
-        tabs.addTab(" Transfer / Cancel", transferUI);
-        tabs.addTab(" Ward Status", wardStatusUI);
-        tabs.addTab(" Reports", reportUI);
-        tabs.addTab(" Assign Nurse", nurseUI);
-        tabs.addTab(" Notifications", notifUI);
-        tabs.addTab(" Accounts", accountUI);
+         // Apply RBAC immediately for the logged-in user
+         applyRbac(currentUser, tabs, admissionUI, transferUI, wardStatusUI, reportUI, nurseUI, notifUI, accountUI);
 
-        // Apply RBAC immediately for the logged-in user
-        applyRbac(currentUser, tabs, admissionUI, transferUI, wardStatusUI, reportUI, nurseUI, notifUI, accountUI);
+         // Header bar (pass tabs so it can update RBAC when user switches)
+         JPanel headerBar = buildHeaderBar(currentUser, allUsers, tabs, admissionUI, transferUI, wardStatusUI, reportUI, nurseUI, notifUI, accountUI);
 
         // Reload live data whenever a tab is focused
         tabs.addChangeListener(e -> {
@@ -99,10 +99,11 @@ public class Main {
         frame.setVisible(true);
     }
 
-    // Header bar
+    // Header bar with dynamic RBAC on user role switch
     private static JPanel buildHeaderBar(User initialUser, List<User> allUsers,
-            AdmissionUI admissionUI, TransferUI transferUI, WardStatusUI wardStatusUI,
-            NurseAssignmentUI nurseUI, NotificationUI notifUI, AccountUI accountUI) {
+            JTabbedPane tabs, AdmissionUI admissionUI, TransferUI transferUI, 
+            WardStatusUI wardStatusUI, ReportUI reportUI, NurseAssignmentUI nurseUI, 
+            NotificationUI notifUI, AccountUI accountUI) {
 
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(AppTheme.PRIMARY);
@@ -147,6 +148,8 @@ public class Main {
             if (sel == null) return;
             roleTag.setText("[" + sel.getClass().getSimpleName().toUpperCase() + "]");
             notifUI.setCurrentUserId(sel.getUserId());
+            // Apply RBAC dynamically when user role switches
+            applyRbac(sel, tabs, admissionUI, transferUI, wardStatusUI, reportUI, nurseUI, notifUI, accountUI);
         });
 
         sessionPanel.add(actingLabel);
