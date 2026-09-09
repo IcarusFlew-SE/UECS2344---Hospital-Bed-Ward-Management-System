@@ -1,6 +1,6 @@
 package hospital.app;
 
-import java.util.*;
+import java.util.List;
 
 import hospital.controller.HospitalController;
 import hospital.model.Admin;
@@ -12,22 +12,26 @@ import javax.swing.*;
 import java.awt.Component;
 import java.awt.Dimension;
 
-// UC09 - Manage User Account & Profile. Kept as its own class since account
-// administration is a distinct concern from hospital operations, per the
-// Design CD Addendum.
+// UC09 - Manage User Account & Profile.
+// ("Admin manages any staff account; Doctor/Nurse manage own profile").
 public class AccountUI extends JPanel {
 	private final HospitalController controller;
+	private final List<User> allUsers;
 	private final JComboBox<User> userBox = new JComboBox<>();
 	private final JLabel detailsLabel = new JLabel(" ");
 	private final JTextField updateContactField = new JTextField();
+	private final JButton updateBtn = new JButton("Update Contact");
+	private final JButton deactivateBtn = new JButton("Deactivate Account");
 
 	private final JComboBox<String> newRoleBox = new JComboBox<>();
 	private final JTextField newNameField = new JTextField();
 	private final JTextField newContactField = new JTextField();
 	private final JTextField newEmailField = new JTextField();
+	private final JButton createBtn = new JButton("Create Account");
 
 	public AccountUI(HospitalController controller, List<User> users) {
 		this.controller = controller;
+		this.allUsers = users;
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
@@ -36,10 +40,8 @@ public class AccountUI extends JPanel {
 		sizeField(userBox);
 		sizeField(updateContactField);
 
-		JButton updateBtn = new JButton("Update Contact");
 		updateBtn.addActionListener(e -> updateAccount((User) userBox.getSelectedItem(), updateContactField.getText()));
 
-		JButton deactivateBtn = new JButton("Deactivate Account");
 		deactivateBtn.addActionListener(e -> deactivateAccount((User) userBox.getSelectedItem()));
 
 		newRoleBox.addItem("Doctor");
@@ -50,7 +52,7 @@ public class AccountUI extends JPanel {
 		sizeField(newContactField);
 		sizeField(newEmailField);
 
-		JButton createBtn = new JButton("Create Account");
+		JButton createBtn = this.createBtn;
 		createBtn.addActionListener(e -> createAccount(
 				(String) newRoleBox.getSelectedItem(), newNameField.getText(),
 				newContactField.getText(), newEmailField.getText()));
@@ -91,6 +93,27 @@ public class AccountUI extends JPanel {
 		if (userBox.getItemCount() > 0) {
 			userBox.setSelectedIndex(0);
 		}
+	}
+
+	// RBAC - Admin sees and manages every account; Doctor/Nurse are locked to their own
+	// account, view/update only, matching the use case document's own stated split
+	public void applyPermissions(User currentUser) {
+		boolean isAdmin = currentUser != null && currentUser.getPermissions().contains("MANAGE_USERS");
+		deactivateBtn.setEnabled(isAdmin);
+		newRoleBox.setEnabled(isAdmin);
+		newNameField.setEnabled(isAdmin);
+		newContactField.setEnabled(isAdmin);
+		newEmailField.setEnabled(isAdmin);
+		createBtn.setEnabled(isAdmin);
+
+		userBox.removeAllItems();
+		if (isAdmin) {
+			for (User u : allUsers) userBox.addItem(u);
+		} else if (currentUser != null) {
+			userBox.addItem(currentUser); // Doctor/Nurse: own account only
+		}
+		userBox.setEnabled(isAdmin); // Doctor/Nurse can't switch to browse other accounts
+		if (userBox.getItemCount() > 0) userBox.setSelectedIndex(0);
 	}
 
 	// UC09 Sub-flow S2 - View

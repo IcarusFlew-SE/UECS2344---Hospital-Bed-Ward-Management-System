@@ -61,8 +61,6 @@ public class AdmissionUI extends JPanel {
 	}
 
 	// Doctor use AdmissionUI: submitAdmission
-	// Kept for callers that do not record an admitting Doctor; delegates so both paths
-	// share one implementation.
 	public void submitAdmission(Patient patient, Ward ward) {
 		submitAdmission(patient, null, ward);
 	}
