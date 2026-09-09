@@ -27,9 +27,11 @@ public class Main {
 		List<User> allUsers = ds.findAllUsers();
 		List<Patient> patients = new ArrayList<>();
 		List<Nurse> nurses = new ArrayList<>();
+		List<Doctor> doctors = new ArrayList<>();
 		for (User u : allUsers) {
 			if (u instanceof Patient p) patients.add(p);
 			if (u instanceof Nurse n) nurses.add(n);
+			if (u instanceof Doctor d) doctors.add(d);
 		}
 		List<Ward> wards = ds.findAllWards();
 
@@ -61,7 +63,7 @@ public class Main {
 		loginBar.add(loginBox);
 
 		JTabbedPane tabs = new JTabbedPane();
-		tabs.addTab("Admit Patient", new AdmissionUI(hc, patients, wards));
+		tabs.addTab("Admit Patient", new AdmissionUI(hc, patients, doctors, wards));
 		tabs.addTab("Transfer / Cancel", transferUI);
 		tabs.addTab("Ward Status", wardStatusUI);
 		tabs.addTab("Reports", new ReportUI(hc));

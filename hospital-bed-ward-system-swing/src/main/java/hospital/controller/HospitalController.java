@@ -33,6 +33,9 @@ public class HospitalController {
         // updateStatus("Occupied") on Bed
         bed.updateBedStatus(BedStatus.OCCUPIED);
         Admission admission = new Admission(generateId("A"), patient, bed, ward);
+        // The Doctor who admits the patient owns the admission (Doctor "manages" Admission
+        // in the class diagram). Without this the association is never populated.
+        admission.setDoctor(doctor);
 
         dataStore.saveAdmission(admission);
 
@@ -144,9 +147,25 @@ public class HospitalController {
             report.setData(occupancyData);
             
         } else if ("Admissions".equals(type)) {
-            // UC03 S2 - retrieve all Admission records
-            java.util.List<Admission> admissions = dataStore.findAllAdmissions();
-            
+            // UC03 S2 - retrieve the Admission records that fall inside the requested period.
+            // The Admin enters the period as YYYY-MM (or YYYY for a whole year); anything that
+            // matches no records falls through to UC03 alt flow 1a, "No records found".
+            java.util.List<Admission> admissions = new java.util.ArrayList<>();
+            for (Admission admission : dataStore.findAllAdmissions()) {
+                if (period == null || period.isBlank()
+                        || admission.getAdmissionDate().toString().startsWith(period.trim())) {
+                    admissions.add(admission);
+                }
+            }
+
+            if (admissions.isEmpty()) {
+                report.setData(new java.util.ArrayList<String>());
+                if (includeUserData) {
+                    report.setUserData(dataStore.findAllUsers());
+                }
+                return report;
+            }
+
             int admissionCount = admissions.size();
             long totalStayDays = 0;
             int completedAdmissions = 0;
