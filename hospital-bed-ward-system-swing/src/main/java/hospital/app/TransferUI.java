@@ -13,8 +13,8 @@ import java.util.List;
 public class TransferUI extends JPanel {
 
     private final HospitalController controller;
-    private final HospitalDataStore  dataStore;
-    private final List<Ward>         wards;
+    private final HospitalDataStore dataStore;
+    private final List<Ward> wards;
 
     // Active-admissions table
     private final String[] ACT_COLS = {"Admission ID", "Patient", "Doctor", "Ward", "Bed", "Status"};
@@ -23,8 +23,8 @@ public class TransferUI extends JPanel {
     };
     private final JTable activeTable = new JTable(activeModel);
 
-    private final JComboBox<Ward> wardBox    = new JComboBox<>();
-    private final JLabel          statusLbl  = new JLabel(" ");
+    private final JComboBox<Ward> wardBox = new JComboBox<>();
+    private final JLabel statusLbl = new JLabel(" ");
 
     // Patient history table
     private final JComboBox<Patient> patientBox = new JComboBox<>();

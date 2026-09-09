@@ -26,7 +26,7 @@ public class NotificationUI extends JPanel {
     private final JLabel summaryLbl = new JLabel(" ");
 
     public NotificationUI(HospitalDataStore dataStore, String currentUserId) {
-        this.dataStore     = dataStore;
+        this.dataStore = dataStore;
         this.currentUserId = currentUserId;
 
         setLayout(new BorderLayout(0, 10));
